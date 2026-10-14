@@ -1,13 +1,22 @@
+#ifndef WIN32
 #include <unistd.h>
+#endif
+
+#include <random>
+
 #include <omp.h>
 #include "png++/png.hpp"
 
 double doSomeWork( int x, int y )
 {
+  std::random_device ranDev;
+  std::mt19937 prng(ranDev());
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
+
     // this is where you normally do lots of work to determine the
     // pixel color, so we will approximate it by a random wait...
     //
-    int rand_num = (int) floor(drand48() * 50000 + 25000);
+  int rand_num = (int) floor(dist(prng) * 50000 + 25000);
     double avg = 0.0;
     for (int n=0; n<rand_num; ++n) {
         avg+=n;
@@ -34,12 +43,12 @@ int main(int argc, char *argv[])
     const int num_colors = sizeof(palette) / sizeof(palette[0]);
 
 #pragma omp parallel for
-    for (size_t y = 0; y < imData.get_height(); ++y)
+    for (auto y = 0; y < imData.get_height(); ++y)
     {
         int thread_id = omp_get_thread_num();
         png::rgb_pixel thread_color = palette[thread_id % num_colors];
 
-        for (size_t x = 0; x < imData.get_width(); ++x)
+        for (auto x = 0; x < imData.get_width(); ++x)
 	{
             double v = doSomeWork(x, y);
             imData[y][x] = thread_color;
